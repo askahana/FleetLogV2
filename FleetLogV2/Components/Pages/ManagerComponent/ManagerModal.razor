@@ -6,33 +6,25 @@
         {
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="staticBackdropLabel">@Title driver</h1>
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">@Title task</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="Driver" Enhance OnValidSubmit="Save">
+                    <EditForm Model="Employee" OnValidSubmit="Save">
                         <DataAnnotationsValidator />
                         <div class="form-group mb-2">
-                            <label class="form-label mb-1" for="name">Driver's name</label>
-                           <InputText @bind-Value="Driver.DriverName" class="form-control"></InputText>
-                            <ValidationMessage For="() => Driver.DriverName" TValue="string"></ValidationMessage>
+                            <label class="form-label mb-1" for="name">Manager's name</label>
+                            <InputText @bind-Value="Employee.EmployeeName" class="form-control"></InputText>
+                            <ValidationMessage For="() => Employee.EmployeeName" TValue="string"></ValidationMessage>
                         </div>
                         <div class="form-group mb-2">
-                            <label class="form-label mb-1" for="carreg">Car number</label>
-                            <InputText @bind-Value="Driver.CarReg" class="form-control"></InputText>
-                            <ValidationMessage For="() => Driver.CarReg"></ValidationMessage>
+                            <label class="form-label mb-1" for="email">Email</label>
+                            <InputText @bind-Value="Employee.Email" class="form-control"></InputText>
+                            <ValidationMessage For="() => Employee.Email"></ValidationMessage>
                         </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label mb-1" for="employeeid">Manger</label>
-                            <InputNumber @bind-Value="Driver.EmployeeId" class="form-control" placeholder="Manager ID"></InputNumber>
-                            @* <InputSelect @bind-Value="Driver.EmployeeId" class="form-control">
-                                @foreach (var item in EmployeeList)
-                                {
-                                    <option value="@item.EmployeeId">@item.EmployeeName</option>
-                                }
-                            </InputSelect> *@
-                        </div>
-                        <div class="modal-footer mb-2 border-0">
+                       
+                      
+                        <div class="modal-footer">
                             <button type="button" class="btn btn-secondary pressed" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary pressed">Save</button>
                         </div>
@@ -49,12 +41,12 @@
                 </div>
                 <div class="modal-body border-0">
                     <div>
-                        <h3>Are you sure to remove this person?</h3>
+                        <h3>Are you sure to delete this?</h3>
                     </div>
                     <div class="modal-footer border-0 hstack gap-2">
                         <form method="dialog">
                             <button type="button" class="btn btn-secondary pressed" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-primary pressed" data-bs-dismiss="modal" @onclick="() => ConfirmDelete(true)">Yes, please remove.</button>
+                            <button type="button" class="btn btn-primary pressed" data-bs-dismiss="modal" @onclick="() => ConfirmDelete(true)">Delete</button>
                         </form>
                     </div>
                 </div>
@@ -67,7 +59,7 @@
         var modal = new bootstrap.Modal(document.getElementById(modalId));
         modal.show();
     }
-    function closeModal(modalId) {
+    function closeModal(modalId){
         var modalElement = document.getElementById(modalId);
         var modal = bootstrap.Modal.getInstance(modalElement);
         if (modal) {
@@ -81,33 +73,40 @@
 </script>
 
 @code {
-    public string Title { get; set; } = "Register new";
+    public string Title { get; set; } = "Add new";
 
     public void ChangeTitle(string title)
     {
         Title = title;
     }
     [Parameter]
-    public Driver Driver { get; set; } = new Driver();
-    [Parameter]
-    public List<Employee> EmployeeList { get; set; } = new List<Employee>();
-    [Parameter]
-    public EventCallback<Driver> HandleAddDriver { get; set; }
-    [Parameter]
-    public EventCallback<Driver> HandleEditDriver { get; set; }
-    [Parameter]
-    public EventCallback HandleConfirmRemoveDriver { get; set; }
+    public Employee Employee { get; set; } = new Employee();
 
+    [Parameter]
+    public EventCallback<Employee> HandleRegisterEmployee { get; set; }
+    [Parameter]
+    public EventCallback<Employee> HandleEditEmployee { get; set; }
+    [Parameter]
+    public EventCallback HandleConfirmDeleteEmployee { get; set; }
 
     public void ClearContainer()
     {
-        Driver = new Driver();
+        Employee = new Employee();
     }
     private async Task Save()
     {
-        await HandleAddDriver.InvokeAsync(Driver);
+        if (Title == "Register new")
+        {
+            await HandleRegisterEmployee.InvokeAsync(Employee);
+        }
+        if (Title == "Edit")
+        {
+            await HandleEditEmployee.InvokeAsync(Employee);
+        }
+
     }
 
+    // This is bool to show either add/edit or delete.
     private bool ShowMainContent { get; set; } = true;
     private bool ShowDeleteConfirmation { get; set; } = false;
     public void LoadDefault()
@@ -134,7 +133,7 @@
     {
         if (response)
         {
-            await HandleConfirmRemoveDriver.InvokeAsync();
+            await HandleConfirmDeleteEmployee.InvokeAsync();
             ShowDeleteConfirmDialog();
         }
     }

@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject NavigationManager NavigationManager
 @attribute [Authorize(Roles ="Admin, Employee")]
+
 <h3 class="text-shadow mt-2 ms-4">Managers list</h3>
 @if(EmployeeList is null)
 {
@@ -10,10 +11,9 @@
 }
 else
 {
-
     <div class="m-3 card shadow">
         <div class="text-end m-2">
-            <a class="btn btn-none btn-sm fw-bold text-info fs-5 pressed" ><i class="fa-solid fa-file-circle-plus me-1"></i>Register new manager</a>
+            <a class="btn btn-none btn-sm fw-bold text-info fs-5 pressed" @onclick="AddClicked"><i class="fa-solid fa-file-circle-plus me-1"></i>Register new manager</a>
         </div>
         <QuickGrid Items="FilteredManager" Pagination="pagination">
             <PropertyColumn Property="e=> e.EmployeeName" Class="py-1 px-2 border-1 col-1">
@@ -23,14 +23,15 @@ else
             </PropertyColumn>
             <PropertyColumn Property="e=> e.Email" Class="py-1 px-2 border-1 col-1"></PropertyColumn>
             <TemplateColumn Title="Action" Align="Align.Center" Class="py-1 px-2 border-1 col-1">
-                <a href="" class="btn btn-warning pressed">Details</a>
-                <a href="" class="btn btn-info pressed">Edit</a>
-                <a href="" class="btn btn-danger pressed">Delete</a>
+                <a href="/managerdetails/@context.EmployeeId" class="btn btn-none btn-sm fw-bold text-info pressed"><i class="fa-solid fa-magnifying-glass-plus"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info pressed" @onclick="() => EditClicked(context)"><i class="fa-regular fa-pen-to-square"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info pressed" @onclick="() => DeleteClicked(context)"><i class="fa-regular fa-trash-can"></i></a>
             </TemplateColumn>
         </QuickGrid>
     </div>
     <Paginator State="@pagination"></Paginator>
-}
+    <ManagerModal @ref="modal" Employee="Employee" HandleRegisterEmployee="HandleAdd"
+        HandleEditEmployee="HandleEdit" HandleConfirmDeleteEmployee="HandleRemove"></ManagerModal>
 <style>
     tr:hover {
         background-color: rgba(0, 123, 255, 0.3);
@@ -41,6 +42,11 @@ else
 @code {
     [Parameter]
     public int Id { get; set; }
+    [Parameter]
+    public Employee Employee { get; set; } = new Employee();
+
+    ManagerModal modal;
+
 
     List<Employee> EmployeeList;
     protected override async Task OnInitializedAsync()
@@ -65,5 +71,61 @@ else
             }
             return result;
         }
+    }
+
+
+    // Add
+    private async Task AddClicked()
+    {
+        modal.ChangeTitle("Register new");
+        Employee = new();
+        modal.LoadDefault();
+        await modal.OpenModal();
+    }
+    private async Task HandleAdd(Employee newManager)
+    {
+        await _context.Employees.AddAsync(newManager);
+        await _context.SaveChangesAsync();
+        EmployeeList = await _context.Employees.ToListAsync();
+        Employee = new();
+    }
+
+
+    // Edit
+    private async Task EditClicked(Employee incomingEmployee)
+    {
+        modal.ChangeTitle("Edit");
+        Employee = incomingEmployee;
+        modal.LoadDefault();
+        await modal.OpenModal();
+    }
+
+    private async Task HandleEdit(Employee incomingEmployee)
+    {
+        var empToEdit = await _context.Employees.FirstOrDefaultAsync
+        (e => e.EmployeeId == incomingEmployee.EmployeeId);
+        if (empToEdit is null) return;
+        empToEdit.EmployeeName = incomingEmployee.EmployeeName;
+        empToEdit.Email = incomingEmployee.Email;
+        await _context.SaveChangesAsync();
+        EmployeeList = await _context.Employees.ToListAsync();
+        await modal.HideModal();
+    }
+
+    // Delete
+    private async Task DeleteClicked(Employee incomingEmployee)
+    {
+        Employee = incomingEmployee;
+        modal.ChangeTitle("Remove");
+        modal.ShowDeleteConfirmDialog();
+        await modal.OpenModal();
+    }
+    private async Task HandleRemove()
+    {
+        _context.Employees.Remove(Employee);
+        await _context.SaveChangesAsync();
+        EmployeeList = await _context.Employees.ToListAsync();
+        await modal.HideModal();
+
     }
 }

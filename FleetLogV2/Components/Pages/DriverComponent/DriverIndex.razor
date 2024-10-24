@@ -24,7 +24,6 @@ else
             <PropertyColumn Property="e => e.CarReg" Sortable="true" Title="Car number" Class="py-1 px-2 border-1" Align="Align.Center"></PropertyColumn>
             <PropertyColumn Property="@(e => e.Employee != null? e.Employee.EmployeeName : "None")" Sortable="true" Title="Responsble" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
             <TemplateColumn Title="Actions" Class=" py-1 border-1 text-black " Align="Align.Center">
-                @*  <a href="/driverdetails/@context.DriverId" class="me-2 btn btn-primary pressed ">Details</a> *@
                 <a href="/driverdetails/@context.DriverId" class="btn btn-none btn-sm fw-bold text-info pressed"><i class="fa-solid fa-magnifying-glass-plus"></i></a>
                 <a class="btn btn-none btn-sm fw-bold text-info pressed" @onclick="() => EditDriverClicked(context)"><i class="fa-regular fa-pen-to-square"></i></a>
                 <a class="btn btn-none btn-sm fw-bold text-info pressed"
@@ -102,8 +101,6 @@ else
     }
     private async Task HandleEditDriver(Driver incomingDriver)
     {
-        if(incomingDriver.DriverId > 0)
-        {
             var driverToEdit = await _app.Drivers.FirstOrDefaultAsync
             (d => d.DriverId == incomingDriver.DriverId);
             if (driverToEdit is null) return;
@@ -111,10 +108,9 @@ else
             driverToEdit.CarReg = incomingDriver.CarReg;
             driverToEdit.EmployeeId = incomingDriver.EmployeeId;
             await _app.SaveChangesAsync();
-            await driverModal.HideModal();
+            
             DriverList = await _app.Drivers.Include(d => d.Employee).ToListAsync();
-           
-        }
+        await driverModal.HideModal();
     }
 
     // Delete/ remove driver
