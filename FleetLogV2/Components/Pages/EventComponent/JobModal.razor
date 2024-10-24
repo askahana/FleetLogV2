@@ -1,0 +1,149 @@
+﻿@inject IJSRuntime js
+
+<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        @if (ShowMainContent)
+        {
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">@Title task</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="Event" OnValidSubmit="Save">
+                        <DataAnnotationsValidator />
+                        <div class="form-group">
+                            <label class="form-label" for="eventtype">Type</label>
+                            <InputSelect @bind-Value="Event.EventType" class="form-control bg-transparent">
+                                @foreach (var item in Enum.GetValues(typeof(EventType)).Cast<EventType>())
+                                {
+                                    <option value="@item" class="bg-body">@item</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="timestamp">Date</label>
+                            <InputDate @bind-Value="Event.TimeStamp" class="form-control"></InputDate>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="income">Income</label>
+                            <InputNumber @bind-Value="Event.AmountIn" class="form-control"></InputNumber>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="expense">Expense</label>
+                            <InputNumber @bind-Value="Event.AmountOut" class="form-control"></InputNumber>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary pressed" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary pressed">Save</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        }
+        @if (ShowDeleteConfirmation)
+        {
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">@Title task</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body border-0">
+                    <div>
+                        <h3>Are you sure to delete this?</h3>
+                    </div>
+                    <div class="modal-footer border-0 hstack gap-2">
+                        <form method="dialog">
+                            <button type="button" class="btn btn-secondary pressed" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary pressed" data-bs-dismiss="modal" @onclick="() => ConfirmDelete(true)">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+<script>
+    function openModal(modalId) {
+        var modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+    }
+    function closeModal(modalId){
+        var modalElement = document.getElementById(modalId);
+        var modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                document.body.classList.remove('modal-open');
+                document.querySelector('.modal-backdrop').remove();
+            }, { once: true });
+        }
+    }
+</script>
+
+@code {
+    public string Title { get; set; } = "Add new";
+
+    public void ChangeTitle(string title)
+    {
+        Title = title;
+    }
+    [Parameter]
+    public Event Event { get; set; } = new Event();
+
+    [Parameter]
+    public EventCallback<Event> HandleAddEvent { get; set; }
+    [Parameter]
+    public EventCallback<Event> HandleEditEvent  { get; set; }
+    [Parameter]
+    public EventCallback HandleConfirmDeleteEvent { get; set; }
+
+    public void ClearContainer()
+    {
+        Event = new Event();
+    }
+    private async Task Save()
+    {
+        if(Title == "Add new")
+        {
+            await HandleAddEvent.InvokeAsync(Event);
+        }
+        if(Title == "Edit")
+        {
+            await HandleEditEvent.InvokeAsync(Event);
+        }
+
+    }
+
+    // This is bool to show either add/edit or delete.
+    private bool ShowMainContent { get; set; } = true;
+    private bool ShowDeleteConfirmation { get; set; } = false;
+    public void LoadDefault()
+    {
+        ShowMainContent = true;
+        ShowDeleteConfirmation = false;
+    }
+    public void ShowDeleteConfirmDialog()
+    {
+        ShowMainContent = false;
+        ShowDeleteConfirmation = true;
+    }
+
+    public async Task OpenModal()
+    {
+        await js.InvokeVoidAsync("openModal", "staticBackdrop");
+    }
+    public async Task HideModal()
+    {
+        await js.InvokeVoidAsync("closeModal", "staticBackdrop");
+    }
+
+    private async Task ConfirmDelete(bool response)
+    {
+        if (response)
+        {
+            await HandleConfirmDeleteEvent.InvokeAsync();
+            ShowDeleteConfirmDialog();
+        }
+    }
+}

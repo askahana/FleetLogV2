@@ -1,0 +1,88 @@
+﻿@page "/events"
+@inject ApplicationDbContext _app
+@attribute [Authorize(Roles = "Admin, Employee")]
+@rendermode InteractiveServer
+
+<h3>All activity List</h3>
+@if (Events is null)
+{
+    <p class="text-shadow">No Event found</p>
+}
+else
+{   <div>
+        <h3 class="mt-4 ms-4">Activities mellan <span class="text-shadow">@startDate.ToShortDateString()</span> and <span class="text-shadow">@endDate.ToShortDateString()</span></h3>
+        <div class="row mb-1 me-2 justify-content-end">
+            <div class="col-auto justify-content-end">
+                <a class="btn btn-none btn-sm fw-bold text-info fs-5"><i class="fa-solid fa-file-circle-plus me-1"></i>Add new task</a>
+            </div>
+        </div>
+    </div>
+    <div class="m-3 card shadow">
+        <QuickGrid Items="FilteredEvents" Pagination="pagination">
+            <PropertyColumn Property="e => e.Driver.DriverName" Sortable="true" Title="Driver's name" Class="py-1 px-3 border-1 col-1" Align="Align.Center">
+                  <ColumnOptions>
+                    <input type="search" autofocus @bind="driverNameFilter" @bind:event="oninput" placeholder="driver's name'" />
+                </ColumnOptions>
+            </PropertyColumn>
+            <PropertyColumn Property="e => e.EventType" Sortable="true" Title="Activity" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
+            <PropertyColumn Property="e => e.TimeStamp" Sortable="true" Title="Date" Class="py-1 px-3 border-1" Align="Align.Center">
+                    <ColumnOptions>
+                         <input type="date" @bind="startDate" @bind:event="oninput" />
+                        <input type="date" @bind="endDate" @bind:event="oninput" />
+                    </ColumnOptions>
+            </PropertyColumn>
+            <PropertyColumn Property="e => e.AmountIn" Sortable="true" Title="Income" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
+            <PropertyColumn Property="e => e.AmountOut" Sortable="true" Title="Expense" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
+            <PropertyColumn Property="@(e => e.Driver.Employee != null? e.Driver.Employee.EmployeeName : "None")" Sortable="true" Title="Responsble" Class="py-1 px-3 border-1" Align="Align.Center">
+                <ColumnOptions>
+                    <input type="search" autofocus @bind="managerNameFilter" @bind:event="oninput" placeholder="manager's name'" />
+                </ColumnOptions>
+            </PropertyColumn>
+            <TemplateColumn Title="Activity" Class="py-1 px-3 border-1 text-black" Align="Align.Center">
+                <a class="btn btn-none btn-sm fw-bold text-info"><i class="fa-regular fa-pen-to-square"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info"><i class="fa-regular fa-trash-can"></i></a>
+            </TemplateColumn>
+        </QuickGrid>
+    </div>
+    <Paginator State="@pagination"></Paginator>
+    <JobModal></JobModal>
+}
+<style>
+    tr:hover {
+        background-color: rgba(0, 123, 255, 0.3);
+    }
+</style>
+@code {
+    PaginationState pagination = new PaginationState() { ItemsPerPage = 10 };
+    List<Event> Events;
+    private DateTime startDate = DateTime.Now.AddDays(-30);
+    private DateTime endDate = DateTime.Now;
+    private string? driverNameFilter;
+    private string? managerNameFilter;
+    IQueryable<Event> FilteredEvents
+    {
+        get
+        {
+            if (Events is null) return Enumerable.Empty<Event>().AsQueryable();
+            var result = Events.AsQueryable();
+            if (!string.IsNullOrEmpty(driverNameFilter))
+            {
+                result = result.Where(c => c.Driver.DriverName.ToLower()
+                .Contains(driverNameFilter.ToLower()));
+            }
+            if (!string.IsNullOrEmpty(managerNameFilter))
+            {
+                result = result.Where(c => c.Driver.Employee.EmployeeName.ToLower()
+                .Contains(managerNameFilter.ToLower()));
+            }
+
+            result = result
+            .Where(e => e.TimeStamp >= startDate && e.TimeStamp <= endDate);
+            return result;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        Events = await _app.Events.Include(e => e.Driver).ThenInclude(d => d.Employee).ToListAsync();
+    }
+}

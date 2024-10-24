@@ -1,0 +1,137 @@
+﻿@page "/drivers"
+@inject ApplicationDbContext _app
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<h3 class="text-shadow mt-2 ms-4">Drivers list</h3>
+@if (DriverList is null)
+{
+    <p>No dirvers found</p>
+}
+else
+{
+    <div class="m-3 card shadow">
+        <div class="text-end m-2">
+            <a class="btn btn-none btn-sm fw-bold text-info fs-5 pressed" @onclick="AddDriverClicked"><i class="fa-solid fa-file-circle-plus me-1"></i>Register new driver</a>
+        </div>
+        <QuickGrid Items="FilteredDriver" Pagination="pagination">
+            <PropertyColumn Property="e => e.DriverId" Sortable="true" Title="Driver's ID" Class=" py-1 px-2 border-1 col-1" Align="Align.Center"></PropertyColumn>
+            <PropertyColumn Property="e => e.DriverName" Sortable="true" Title="Driver's name" Class="py-1 px-2 border-1" Align="Align.Center">
+                <ColumnOptions>
+                    <input type="search" autofocus @bind="nameFilter" @bind:event="oninput" placeholder="driver's name'" />
+                </ColumnOptions>
+            </PropertyColumn>
+            <PropertyColumn Property="e => e.CarReg" Sortable="true" Title="Car number" Class="py-1 px-2 border-1" Align="Align.Center"></PropertyColumn>
+            <PropertyColumn Property="@(e => e.Employee != null? e.Employee.EmployeeName : "None")" Sortable="true" Title="Responsble" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
+            <TemplateColumn Title="Actions" Class=" py-1 border-1 text-black " Align="Align.Center">
+                @*  <a href="/driverdetails/@context.DriverId" class="me-2 btn btn-primary pressed ">Details</a> *@
+                <a href="/driverdetails/@context.DriverId" class="btn btn-none btn-sm fw-bold text-info pressed"><i class="fa-solid fa-magnifying-glass-plus"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info pressed" @onclick="() => EditDriverClicked(context)"><i class="fa-regular fa-pen-to-square"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info pressed"
+                   @onclick="() => DeleteDriverClicked(context)"><i class="fa-regular fa-trash-can"></i></a>
+            </TemplateColumn>
+        </QuickGrid>
+    </div>
+    <Paginator State="@pagination"></Paginator>
+    <GoBack></GoBack>
+    <DriverModal @ref="driverModal" EmployeeList="EmployeeList"
+        Driver="Driver" HandleAddDriver="HandleRegisterDriver"
+    HandleConfirmRemoveDriver="HandleRemoveDriver"></DriverModal>
+    <style>
+        tr:hover {
+            background-color: rgba(0, 123, 255, 0.3);
+        }
+    </style>
+}
+
+
+@code {
+    List<Driver> DriverList;
+    List<Employee> EmployeeList;
+    protected override async Task OnInitializedAsync()
+    {
+        DriverList = await _app.Drivers.Include(d => d.Employee).ToListAsync();
+        EmployeeList = await _app.Employees.ToListAsync();
+    }
+
+    private string? nameFilter;
+    PaginationState pagination = new PaginationState() { ItemsPerPage = 10 };
+    private IQueryable<Driver> FilteredDriver
+    {
+        get
+        {
+            var result = DriverList.AsQueryable();
+            if (!string.IsNullOrEmpty(nameFilter))
+            {
+                result = result.Where(d => d.DriverName.ToLower()
+                .Contains(nameFilter.ToLower()));
+            }
+            return result;
+        }
+    }
+    // This is for modal.
+    [Parameter]
+    public Driver Driver { get; set; } = new();
+    DriverModal driverModal;
+    // Add Register new driver
+
+    private async Task AddDriverClicked()
+    {
+        Driver = new Driver();
+        driverModal.ChangeTitle("Register new");
+        driverModal.LoadDefault();
+        await driverModal.OpenModal();
+    }
+    private async Task HandleRegisterDriver(Driver newDriver)
+    {
+        await _app.Drivers.AddAsync(newDriver);
+        await _app.SaveChangesAsync();
+        DriverList = await _app.Drivers.Include(d => d.Employee).ToListAsync();
+        driverModal.ClearContainer();
+        Driver = new();
+       
+    }
+
+    // Edit driver
+    private async Task EditDriverClicked(Driver driver)
+    {
+        Driver = driver;
+        driverModal.ChangeTitle("Edit");
+        driverModal.LoadDefault();
+        await driverModal.OpenModal();
+    }
+    private async Task HandleEditDriver(Driver incomingDriver)
+    {
+        if(incomingDriver.DriverId > 0)
+        {
+            var driverToEdit = await _app.Drivers.FirstOrDefaultAsync
+            (d => d.DriverId == incomingDriver.DriverId);
+            if (driverToEdit is null) return;
+            driverToEdit.DriverName = incomingDriver.DriverName;
+            driverToEdit.CarReg = incomingDriver.CarReg;
+            driverToEdit.EmployeeId = incomingDriver.EmployeeId;
+            await _app.SaveChangesAsync();
+            await driverModal.HideModal();
+            DriverList = await _app.Drivers.Include(d => d.Employee).ToListAsync();
+           
+        }
+    }
+
+    // Delete/ remove driver
+    private async Task DeleteDriverClicked(Driver driver)
+    {
+        Driver = driver;
+        driverModal.ChangeTitle("Remove");
+        driverModal.ShowDeleteConfirmDialog();
+        await driverModal.OpenModal();
+    }
+    private async Task HandleRemoveDriver()
+    {
+        if (Driver is null) return;
+        _app.Drivers.Remove(Driver);
+        await _app.SaveChangesAsync();
+        DriverList = await _app.Drivers.Include(d => d.Employee).ToListAsync();
+        await driverModal.HideModal();
+    }
+
+}

@@ -1,0 +1,23 @@
+﻿@page "/managerdetails/{Id:int}"
+@inject ApplicationDbContext _app
+
+@if(Employee is null)
+{
+    <p class="text-shadow">No manager found.</p>
+}
+else
+{
+    
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    [Parameter]
+    public Employee Employee { get; set; } = new Employee();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Employee = await _app.Employees.FirstOrDefaultAsync(e => e.EmployeeId == Id);
+    }
+}
