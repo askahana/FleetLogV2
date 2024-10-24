@@ -12,6 +12,7 @@ else
         <div class="row">
             <div class="col-8">
                 <table class="mx-5 py-5 my-3 w-100">
+
                     <tr>
                         <th class="h2">Driver ID:</th>
                         <td class="h2">@Driver.DriverId</td>
@@ -28,9 +29,25 @@ else
                         <th class="h2">Manager:</th>
                         <td class="h2">@(Driver.Employee?.EmployeeName ?? "None")</td>
                     </tr>
+                  @*   @if (Driver.Event != null && Driver.Event.Any())
+                    {
+                        <tr class=""><th class="h2">Between
+                                <span class="text-shadow">@startDate.ToShortDateString()</span> and
+                                <span class="text-shadow">@endDate.ToShortDateString()</span>
+                            </th>
+                        </tr>
+                    <tr>
+                        <th class="h2">Total income</th>
+                        <td class="h2">@GetSum().ToString("c")</td>
+                    </tr>
+                    <tr>
+                        <th class="h2">Total expense</th>
+                        <td class="h2">@GetSumExpense().ToString("c")</td>
+                    </tr>
+                    } *@
                 </table>
             </div>
-            <div class="col-2 mt-3">
+            <div class="col-2 mt-3 ">
                 <img src="@($"/images/drivers/driver{Driver.DriverId}.jpg")" alt="Alternate Text" class="img-fluid rounded-circle"
                      style="width:180px; height:180px; background-position:center;"
                      onerror="this.onerror=null;this.src='/images/avatar.png';" />
@@ -51,7 +68,12 @@ else
                                @bind:event="oninput" placefoler="Task name" />
                     </ColumnOptions>
                 </PropertyColumn>
-                <PropertyColumn Property="e => e.TimeStamp" Sortable="true" Title="Date" Class="py-1 px-3 border-1"></PropertyColumn>
+                <PropertyColumn Property="e => e.TimeStamp" Sortable="true" Title="Date" Class="py-1 px-3 border-1">
+                    <ColumnOptions>
+                        <input type="date" @bind="startDate" @bind:event="oninput" />
+                        <input type="date" @bind="endDate" @bind:event="oninput" />
+                    </ColumnOptions>
+                </PropertyColumn>
                 <PropertyColumn Property="e => e.AmountIn" Sortable="true" Title="Income" Class="py-1 px-3 border-1"></PropertyColumn>
                 <PropertyColumn Property="e => e.AmountOut" Sortable="true" Title="Expense" Class="py-1 px-3 border-1"></PropertyColumn>
                 <TemplateColumn Title="Ohters" Class="py-1 px-3 border-1 text-black" Align="Align.Center">
@@ -68,15 +90,15 @@ else
         }
     </div>
     <GoBack/>
-}
+
 
 <JobModal @ref="jobModal" Event="Event" HandleAddEvent="HandleAddEvent"
             HandleConfirmDeleteEvent="HandleConfirmDeleteEvent"
          HandleEditEvent ="HandleEditEvent"> 
 </JobModal>
 <style>
-    tr:hover {
-        background-color: darkblue;
+    tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.3);
     }
 </style>
 }
@@ -89,7 +111,10 @@ else
     public int Id { get; set; }
     [Parameter]
     public Event Event { get; set; } = new();
+    // These are for filtering.
     private string? eventFilter;
+    private DateTime startDate = DateTime.Now.AddDays(-50);
+    private DateTime endDate = DateTime.Now;
     IQueryable<Event> FilteredEvent
     {
         get
@@ -99,6 +124,9 @@ else
             {
                 result = result.Where(d => d.EventType.ToString().Contains(eventFilter, StringComparison.CurrentCultureIgnoreCase));
             }
+            result = result
+            .Where(e => e.TimeStamp >= startDate && e.TimeStamp <= endDate);
+
             return result;
         }
     }
@@ -169,5 +197,12 @@ else
         await jobModal.HideModal();
     }
 
-
+    private decimal GetSum()
+    {
+        return FilteredEvent.Sum(e => e.AmountIn);
+    }
+    private decimal GetSumExpense()
+    {
+        return FilteredEvent.Sum(e => e.AmountOut);
+    }
 }

@@ -8,27 +8,42 @@
 
 @if (Todays is null)
 {
-    <p>Loading...</p>
+    <p>No activity within <span class="text-shadow">24</span> hours</p>
 }
 else
 {
     <div class="m-3 card shadow">
-        <QuickGrid Items="Todays.AsQueryable()" Pagination="pagination">
-            <PropertyColumn Property="e => e.Driver.DriverName" Sortable="true" Title="Driver's name" Class="py-1 px-3 border-1 col-1" Align="Align.Center"></PropertyColumn>
+        <div>
+            <h3 class="m-3">Total income : <span class="text-shadow">@GetSum().ToString("c")</span></h3>
+            <h3 class="m-3">Total expense: <span class="text-shadow">@GetSumExpense().ToString("c")</span></h3>
+        </div>
+        <QuickGrid Items="FilteredEvents" Pagination="pagination">
+            <PropertyColumn Property="e => e.Driver.DriverName" Sortable="true" Title="Driver's name" Class="py-1 px-3 border-1 col-1" Align="Align.Center">
+                <ColumnOptions>
+                    <input type="search" autofocus @bind="driverNameFilter" @bind:event="oninput" placeholder="driver's name'" />
+                </ColumnOptions>
+            </PropertyColumn>
             <PropertyColumn Property="e => e.EventType" Sortable="true" Title="Activity" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
             <PropertyColumn Property="e => e.TimeStamp" Sortable="true" Title="Date" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
             <PropertyColumn Property="e => e.AmountIn" Sortable="true" Title="Income" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
             <PropertyColumn Property="e => e.AmountOut" Sortable="true" Title="Expense" Class="py-1 px-3 border-1" Align="Align.Center"></PropertyColumn>
+            <PropertyColumn Property="@(e => e.Driver.Employee != null? e.Driver.Employee.EmployeeName : "None")" Sortable="true" Title="Responsble" Class="py-1 px-3 border-1" Align="Align.Center">
+                <ColumnOptions>
+                    <input type="search" autofocus @bind="managerNameFilter" @bind:event="oninput" placeholder="manager's name'" />
+                </ColumnOptions>
+            </PropertyColumn>
             <TemplateColumn Title="Activity" Class="py-1 px-3 border-1 text-black" Align="Align.Center">
-                <a class="btn btn-none btn-sm fw-bold text-info"><i class="fa-regular fa-pen-to-square"></i></a>
-                <a class="btn btn-none btn-sm fw-bold text-info"><i class="fa-regular fa-trash-can"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info" @onclick="() => EditTaskClicked(context)"><i class="fa-regular fa-pen-to-square"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info" @onclick="() => DeleteTaskClicked(context)"><i class="fa-regular fa-trash-can"></i></a>
             </TemplateColumn>
         </QuickGrid>
     </div>
     <Paginator State="@pagination"></Paginator>
+    <JobModal @ref="jobModal" Event="Event"
+              HandleEditEvent="HandleEditEvent" HandleConfirmDeleteEvent="HandleConfirmDeleteEvent"></JobModal>
 }
 <style>
-    tr:hover {
+    tbody tr:hover {
         background-color: rgba(0, 123, 255, 0.3);
     }
 </style>
@@ -36,10 +51,86 @@ else
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
     List<Event> Events;
     List<Event> Todays;
+    private string? driverNameFilter;
+    private string? managerNameFilter;
+    [Parameter]
+    public Event Event { get; set; } = new Event();
+    JobModal jobModal;
     protected override async Task OnInitializedAsync()
     {
         Events = await _app.Events.Include(e => e.Driver).ThenInclude(d => d.Employee).ToListAsync();
-            Todays = Events.Where(e => e.TimeStamp >= DateTime.Now.AddHours(-24)).ToList();
-       
+        Todays = Events.Where(e => e.TimeStamp >= DateTime.Now.AddHours(-24)).ToList();
+    }
+    IQueryable<Event> FilteredEvents
+    {
+        get
+        {
+            if (Events is null) return Enumerable.Empty<Event>().AsQueryable();
+            var result = Todays.AsQueryable();
+            if (!string.IsNullOrEmpty(driverNameFilter))
+            {
+                result = result.Where(c => c.Driver.DriverName.ToLower()
+                .Contains(driverNameFilter.ToLower()));
+            }
+            if (!string.IsNullOrEmpty(managerNameFilter))
+            {
+                result = result.Where(c => c.Driver.Employee.EmployeeName.ToLower()
+                .Contains(managerNameFilter.ToLower()));
+            }
+
+            return result;
+        }
+    }
+
+    //Edit
+    private async Task EditTaskClicked(Event incomingEvent)
+    {
+        Event = incomingEvent;
+        jobModal.ChangeTitle("Edit");
+        jobModal.LoadDefault();
+        await jobModal.OpenModal();
+    }
+    private async Task HandleEditEvent(Event incomingEvent)
+    {
+        // Edit
+        if (incomingEvent.EventId > 0)
+        {
+            var eventEdit = _app.Events.FirstOrDefault(d => d.EventId == incomingEvent.EventId);
+            if (eventEdit is null) return;
+            eventEdit.EventType = incomingEvent.EventType;
+            eventEdit.TimeStamp = incomingEvent.TimeStamp;
+            eventEdit.AmountIn = incomingEvent.AmountIn;
+            eventEdit.AmountOut = incomingEvent.AmountOut;
+            await _app.SaveChangesAsync();
+            await jobModal.HideModal();
+            return;
+        }
+    }
+
+    //Delete
+    private async Task DeleteTaskClicked(Event thisEvent)
+    {
+        Event = thisEvent;
+        jobModal.ChangeTitle("Delete");
+        jobModal.ShowDeleteConfirmDialog();
+        await jobModal.OpenModal();
+    }
+    private async Task HandleConfirmDeleteEvent()
+    {
+        if (Event is null) return;
+        _app.Events.Remove(Event);
+        await _app.SaveChangesAsync();
+        Events = await _app.Events.Include(e => e.Driver).ThenInclude(d => d.Employee).ToListAsync();
+        Todays = Events.Where(e => e.TimeStamp >= DateTime.Now.AddHours(-24)).ToList();
+        await jobModal.HideModal();
+    }
+
+    private decimal GetSum()
+    {
+        return FilteredEvents.Sum(e => e.AmountIn);
+    }
+    private decimal GetSumExpense()
+    {
+        return FilteredEvents.Sum(e => e.AmountOut);
     }
 }

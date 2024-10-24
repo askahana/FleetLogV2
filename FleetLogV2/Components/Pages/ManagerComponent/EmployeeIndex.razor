@@ -2,9 +2,9 @@
 @inject ApplicationDbContext _context
 @rendermode InteractiveServer
 @inject NavigationManager NavigationManager
-@attribute [Authorize(Roles ="Admin, Employee")]
+@attribute [Authorize(Roles ="Admin")]
 
-<h3 class="text-shadow mt-2 ms-4">Managers list</h3>
+<h2 class="text-shadow mt-2 ms-4">Managers list<img class="mb-2" src="/images/employee1.png" alt="Alternate Text" style="width:80px;" /></h2>
 @if(EmployeeList is null)
 {
     <p>No manager found.</p>
@@ -16,13 +16,13 @@ else
             <a class="btn btn-none btn-sm fw-bold text-info fs-5 pressed" @onclick="AddClicked"><i class="fa-solid fa-file-circle-plus me-1"></i>Register new manager</a>
         </div>
         <QuickGrid Items="FilteredManager" Pagination="pagination">
-            <PropertyColumn Property="e=> e.EmployeeName" Class="py-1 px-2 border-1 col-1">
+            <PropertyColumn Property="e=> e.EmployeeName" Sortable="true" Class="py-1 px-2 border-1 col-1 " Align="Align.Center">
                 <ColumnOptions>
                     <input type="search" autofocus @bind="nameFilter" @bind:event="oninput" />
                 </ColumnOptions>
             </PropertyColumn>
-            <PropertyColumn Property="e=> e.Email" Class="py-1 px-2 border-1 col-1"></PropertyColumn>
-            <TemplateColumn Title="Action" Align="Align.Center" Class="py-1 px-2 border-1 col-1">
+            <PropertyColumn Property="e=> e.Email" Class="py-1 px-2 border-1 col-1" Sortable="true" Align="Align.Center"></PropertyColumn>
+            <TemplateColumn Title="Action" Align="Align.Center" Class="py-1 px-2 border-1 col-1 text-black">
                 <a href="/managerdetails/@context.EmployeeId" class="btn btn-none btn-sm fw-bold text-info pressed"><i class="fa-solid fa-magnifying-glass-plus"></i></a>
                 <a class="btn btn-none btn-sm fw-bold text-info pressed" @onclick="() => EditClicked(context)"><i class="fa-regular fa-pen-to-square"></i></a>
                 <a class="btn btn-none btn-sm fw-bold text-info pressed" @onclick="() => DeleteClicked(context)"><i class="fa-regular fa-trash-can"></i></a>
@@ -30,12 +30,13 @@ else
         </QuickGrid>
     </div>
     <Paginator State="@pagination"></Paginator>
+    <GoBack />
     <ManagerModal @ref="modal" Employee="Employee" HandleRegisterEmployee="HandleAdd"
         HandleEditEmployee="HandleEdit" HandleConfirmDeleteEmployee="HandleRemove"></ManagerModal>
 <style>
-    tr:hover {
-        background-color: rgba(0, 123, 255, 0.3);
-    }
+        tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.3);
+        }
 </style>
 }
 
@@ -87,7 +88,7 @@ else
         await _context.Employees.AddAsync(newManager);
         await _context.SaveChangesAsync();
         EmployeeList = await _context.Employees.ToListAsync();
-        Employee = new();
+        await modal.HideModal();
     }
 
 

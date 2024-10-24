@@ -3,7 +3,7 @@
 @attribute [Authorize(Roles = "Admin, Employee")]
 @rendermode InteractiveServer
 
-<h3>All activity List</h3>
+
 @if (Events is null)
 {
     <p class="text-shadow">No Event found</p>
@@ -11,13 +11,13 @@
 else
 {   <div>
         <h3 class="mt-4 ms-4">Activities mellan <span class="text-shadow">@startDate.ToShortDateString()</span> and <span class="text-shadow">@endDate.ToShortDateString()</span></h3>
-        <div class="row mb-1 me-2 justify-content-end">
-            <div class="col-auto justify-content-end">
-                <a class="btn btn-none btn-sm fw-bold text-info fs-5"><i class="fa-solid fa-file-circle-plus me-1"></i>Add new task</a>
-            </div>
-        </div>
+       
     </div>
     <div class="m-3 card shadow">
+        <div>
+            <h3 class="m-3">Total income : <span class="text-shadow">@GetSum().ToString("c")</span></h3>
+            <h3 class="m-3">Total expense: <span class="text-shadow">@GetSumExpense().ToString("c")</span></h3>
+        </div>
         <QuickGrid Items="FilteredEvents" Pagination="pagination">
             <PropertyColumn Property="e => e.Driver.DriverName" Sortable="true" Title="Driver's name" Class="py-1 px-3 border-1 col-1" Align="Align.Center">
                   <ColumnOptions>
@@ -39,22 +39,26 @@ else
                 </ColumnOptions>
             </PropertyColumn>
             <TemplateColumn Title="Activity" Class="py-1 px-3 border-1 text-black" Align="Align.Center">
-                <a class="btn btn-none btn-sm fw-bold text-info"><i class="fa-regular fa-pen-to-square"></i></a>
-                <a class="btn btn-none btn-sm fw-bold text-info"><i class="fa-regular fa-trash-can"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info" @onclick="() => EditTaskClicked(context)"><i class="fa-regular fa-pen-to-square"></i></a>
+                <a class="btn btn-none btn-sm fw-bold text-info" @onclick="() => DeleteTaskClicked(context)"><i class="fa-regular fa-trash-can"></i></a>
             </TemplateColumn>
         </QuickGrid>
     </div>
     <Paginator State="@pagination"></Paginator>
-    <JobModal></JobModal>
+    <JobModal @ref="jobModal" Event="Event" 
+        HandleEditEvent="HandleEditEvent" HandleConfirmDeleteEvent="HandleConfirmDeleteEvent"></JobModal>
 }
 <style>
-    tr:hover {
+    tbody tr:hover {
         background-color: rgba(0, 123, 255, 0.3);
     }
 </style>
 @code {
     PaginationState pagination = new PaginationState() { ItemsPerPage = 10 };
     List<Event> Events;
+    [Parameter]
+    public Event Event { get; set; } = new Event();
+    JobModal jobModal;
     private DateTime startDate = DateTime.Now.AddDays(-30);
     private DateTime endDate = DateTime.Now;
     private string? driverNameFilter;
@@ -84,5 +88,75 @@ else
     protected override async Task OnInitializedAsync()
     {
         Events = await _app.Events.Include(e => e.Driver).ThenInclude(d => d.Employee).ToListAsync();
+    }
+
+    // Add
+    private async Task AddClicked()
+    {
+        Event = new Event();
+        jobModal.ChangeTitle("Add new");
+        jobModal.LoadDefault();
+        await jobModal.OpenModal();
+    }
+
+    private async Task HandleAddEvent(Event incomingEvent)
+    {
+        incomingEvent.DriverId = Event.DriverId;
+        var newEvent = _app.Events.Add(incomingEvent);
+        // await _app.Drivers.Event.AddAsync(newEvent);
+        await _app.SaveChangesAsync();
+        jobModal.ClearContainer();
+        Event = new Event();
+    }
+
+    //Edit
+    private async Task EditTaskClicked(Event incomingEvent)
+    {
+        Event = incomingEvent;
+        jobModal.ChangeTitle("Edit");
+        jobModal.LoadDefault();
+        await jobModal.OpenModal();
+    }
+    private async Task HandleEditEvent(Event incomingEvent)
+    {
+        // Edit
+        if (incomingEvent.EventId > 0)
+        {
+            var eventEdit = _app.Events.FirstOrDefault(d => d.EventId == incomingEvent.EventId);
+            if (eventEdit is null) return;
+            eventEdit.EventType = incomingEvent.EventType;
+            eventEdit.TimeStamp = incomingEvent.TimeStamp;
+            eventEdit.AmountIn = incomingEvent.AmountIn;
+            eventEdit.AmountOut = incomingEvent.AmountOut;
+            await _app.SaveChangesAsync();
+            await jobModal.HideModal();
+            return;
+        }
+    }
+
+    //Delete
+    private async Task DeleteTaskClicked(Event thisEvent)
+    {
+        Event = thisEvent;
+        jobModal.ChangeTitle("Delete");
+        jobModal.ShowDeleteConfirmDialog();
+        await jobModal.OpenModal();
+    }
+    private async Task HandleConfirmDeleteEvent()
+    {
+        if (Event is null) return;
+        _app.Events.Remove(Event);
+        await _app.SaveChangesAsync();
+        Events = await _app.Events.Include(e => e.Driver).ThenInclude(d => d.Employee).ToListAsync();
+        await jobModal.HideModal();
+    }
+    // To show total incom and expense
+    private decimal GetSum()
+    {
+        return FilteredEvents.Sum(e => e.AmountIn);
+    }
+    private decimal GetSumExpense()
+    {
+        return FilteredEvents.Sum(e => e.AmountOut);
     }
 }

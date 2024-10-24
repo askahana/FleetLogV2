@@ -10,7 +10,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="Driver" Enhance OnValidSubmit="Save">
+                    <EditForm Model="Driver" OnValidSubmit="Save">
                         <DataAnnotationsValidator />
                         <div class="form-group mb-2">
                             <label class="form-label mb-1" for="name">Driver's name</label>
@@ -24,13 +24,14 @@
                         </div>
                         <div class="form-group mb-2">
                             <label class="form-label mb-1" for="employeeid">Manger</label>
-                            <InputNumber @bind-Value="Driver.EmployeeId" class="form-control" placeholder="Manager ID"></InputNumber>
-                            @* <InputSelect @bind-Value="Driver.EmployeeId" class="form-control">
+                            @* <InputNumber @bind-Value="Driver.EmployeeId" class="form-control" placeholder="Manager ID"></InputNumber> *@
+                            <InputSelect @bind-Value="Driver.EmployeeId" class="form-control">
+                                <option value="" class="bg-body">Select an employee</option>
                                 @foreach (var item in EmployeeList)
                                 {
-                                    <option value="@item.EmployeeId">@item.EmployeeName</option>
+                                    <option value="@item.EmployeeId" class="bg-body">@item.EmployeeName</option>
                                 }
-                            </InputSelect> *@
+                            </InputSelect>
                         </div>
                         <div class="modal-footer mb-2 border-0">
                             <button type="button" class="btn btn-secondary pressed" data-bs-dismiss="modal">Close</button>
@@ -44,7 +45,7 @@
         {
             <div class="modal-content">
                 <div class="modal-header border-0">
-                    <h1 class="modal-title fs-5" id="staticBackdropLabel">@Title task</h1>
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">@Title manager</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body border-0">
@@ -105,7 +106,14 @@
     }
     private async Task Save()
     {
-        await HandleAddDriver.InvokeAsync(Driver);
+        if (Title == "Edit")
+        {
+            await HandleEditDriver.InvokeAsync(Driver);
+        }
+        else
+        {
+            await HandleAddDriver.InvokeAsync(Driver);
+        }
     }
 
     private bool ShowMainContent { get; set; } = true;
