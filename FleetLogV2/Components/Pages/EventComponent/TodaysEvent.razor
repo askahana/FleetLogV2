@@ -12,11 +12,8 @@
 }
 else
 {
-    <div class="m-3 card shadow">
-        <div>
-            <h3 class="m-3">Total income : <span class="text-shadow">@GetSum().ToString("c")</span></h3>
-            <h3 class="m-3">Total expense: <span class="text-shadow">@GetSumExpense().ToString("c")</span></h3>
-        </div>
+    <div class="m-3 card shadow ">
+       
         <QuickGrid Items="FilteredEvents" Pagination="pagination">
             <PropertyColumn Property="e => e.Driver.DriverName" Sortable="true" Title="Driver's name" Class="py-1 px-3 border-1 col-1" Align="Align.Center">
                 <ColumnOptions>
@@ -37,6 +34,16 @@ else
                 <a class="btn btn-none btn-sm fw-bold text-info" @onclick="() => DeleteTaskClicked(context)"><i class="fa-regular fa-trash-can"></i></a>
             </TemplateColumn>
         </QuickGrid>
+        <div class="offset-5 mt-3">
+            <div class="d-flex">
+            <h5 class="text-black">Total:  </h5>
+                <div class="hstack gap-5 h5">
+                    <span class="text-shadow text-white ms-3">@GetSum().ToString("c") </span>
+                    <span class="text-shadow text-white text-end">@GetSumExpense().ToString("c")</span>
+                </div>
+            </div>
+        </div>
+       
     </div>
     <Paginator State="@pagination"></Paginator>
     <JobModal @ref="jobModal" Event="Event"

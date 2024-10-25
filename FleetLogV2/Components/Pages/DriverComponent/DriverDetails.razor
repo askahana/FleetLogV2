@@ -12,7 +12,6 @@ else
         <div class="row">
             <div class="col-8">
                 <table class="mx-5 py-5 my-3 w-100">
-
                     <tr>
                         <th class="h2">Driver ID:</th>
                         <td class="h2">@Driver.DriverId</td>
@@ -48,7 +47,7 @@ else
                 </table>
             </div>
             <div class="col-2 mt-3 ">
-                <img src="@($"/images/drivers/driver{Driver.DriverId}.jpg")" alt="Alternate Text" class="img-fluid rounded-circle"
+                <img src="@($"/images/drivers/driver{Driver.DriverId}.jpg")" alt="Alternate Text" class="img_circle"
                      style="width:180px; height:180px; background-position:center;"
                      onerror="this.onerror=null;this.src='/images/avatar.png';" />
             </div>
@@ -150,10 +149,10 @@ else
     {
         incomingEvent.DriverId = Driver.DriverId;
         var newEvent = _app.Events.Add(incomingEvent);
-        // await _app.Drivers.Event.AddAsync(newEvent);
         await _app.SaveChangesAsync();
-        jobModal.ClearContainer();
-        Event = new Event();
+        Driver = await _app.Drivers.Include(d => d.Event).Include(d => d.Employee).FirstOrDefaultAsync(d => d.DriverId == Id);
+        // StateHasChanged();
+        await jobModal.HideModal();
     }
 
     //Edit

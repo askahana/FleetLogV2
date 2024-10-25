@@ -4,7 +4,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "Admin, Employee")]
 
-<h2 class="text-shadow mt-2 ms-4">Drivers list <img class="mb-2" src="/images/admin1.png" alt="Alternate Text" style="width:100px;" /></h2>
+<h2 class="text-shadow mt-2 ms-4">Drivers list</h2>
 @if (DriverList is null)
 {
     <h3 class="text-shadow mt-2 ms-4">No drivers found</h3>
@@ -43,7 +43,6 @@ else
                  HandleEditDriver="HandleEditDriver"
     HandleConfirmRemoveDriver="HandleRemoveDriver"></DriverModal>
     <style>
-
         tbody tr:hover {
             background-color: rgba(0, 123, 255, 0.3);
         }
@@ -96,11 +95,13 @@ else
     }
     private async Task HandleRegisterDriver(Driver newDriver)
     {
+      
         await _app.Drivers.AddAsync(newDriver);
         await _app.SaveChangesAsync();
         DriverList = await _app.Drivers.Include(d => d.Employee).ToListAsync();
         await driverModal.HideModal();
     }
+   
 
     // Edit driver
     private async Task EditDriverClicked(Driver driver)
@@ -118,6 +119,7 @@ else
             driverToEdit.DriverName = incomingDriver.DriverName;
             driverToEdit.CarReg = incomingDriver.CarReg;
             driverToEdit.EmployeeId = incomingDriver.EmployeeId;
+         
             await _app.SaveChangesAsync();
             DriverList = await _app.Drivers.Include(d => d.Employee).ToListAsync();
             await driverModal.HideModal();

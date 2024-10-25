@@ -23,17 +23,14 @@ else
                         <th class="h2">Email:</th>
                         <td class="h2">@Employee.Email</td>
                     </tr>
-                   
                 </table>
             </div>
             <div class="col-2 mt-2 mb-2">
-                <img src="@($"/images/managers/manager{Employee.EmployeeId}.jpg")" alt="Alternate Text" class="img-fluid rounded-circle"
+                <img src="@($"/images/managers/manager{Employee.EmployeeId}.jpg")" alt="Alternate Text" class="img_circle"
                      style="width:180px; height:180px; background-position:center;"
                      onerror="this.onerror=null;this.src='/images/avatar.png';" />
             </div>
         </div>
-       
-       
     </div>
     <GoBack />
 }

@@ -1,4 +1,6 @@
-﻿@inject IJSRuntime js
+﻿@using System.Net.Http.Headers
+@inject IJSRuntime js
+
 
 <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -24,7 +26,6 @@
                         </div>
                         <div class="form-group mb-2">
                             <label class="form-label mb-1" for="employeeid">Manger</label>
-                            @* <InputNumber @bind-Value="Driver.EmployeeId" class="form-control" placeholder="Manager ID"></InputNumber> *@
                             <InputSelect @bind-Value="Driver.EmployeeId" class="form-control">
                                 <option value="" class="bg-body">Select an employee</option>
                                 @foreach (var item in EmployeeList)
@@ -33,7 +34,11 @@
                                 }
                             </InputSelect>
                         </div>
+                        <div class="form-group">
+                            <InputFile class="form-controle" OnChange="OnInputFileChange"></InputFile>
+                        </div>
                         <div class="modal-footer mb-2 border-0">
+                         
                             <button type="button" class="btn btn-secondary pressed" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary pressed">Save</button>
                         </div>
@@ -146,4 +151,47 @@
             ShowDeleteConfirmDialog();
         }
     }
+
+    // Upload File
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        // using var content = new MultipartFormDataContent();
+        // foreach(var file in e.GetMultipleFiles())
+        // {
+        //     var fileContent = new StreamContent(file.OpenReadStream());
+        //     fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+        //     content.Add(
+        //         content: fileContent,
+        //         name: "\"files\"",
+        //         fileName: file.Name
+        //     );
+        // }
+
+        var browserFile = e.File;
+        if(browserFile != null)
+        {
+            try
+            {
+                var fileStream = browserFile.OpenReadStream();
+                var randomFile = Path.GetTempFileName();
+                var extension = Path.GetExtension(browserFile.Name);
+                var targetFilePath = Path.ChangeExtension(randomFile, extension);
+                var targetStream = new FileStream(targetFilePath, FileMode.Create);
+                await fileStream.CopyToAsync(targetStream);
+                targetStream.Close();
+            }
+            catch(Exception exception)
+            {
+                
+            }
+
+
+
+
+        }
+    }
+    
+    }
+   
 }

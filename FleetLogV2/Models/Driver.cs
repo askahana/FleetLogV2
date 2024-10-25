@@ -12,6 +12,7 @@ namespace FleetLogV2.Models
         public string CarReg { get; set; }
         public int? EmployeeId { get; set; }
         public Employee Employee { get; set; }
+      
         public ICollection<Event> Event { get; set; }
     }
 }

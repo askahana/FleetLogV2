@@ -22,6 +22,7 @@ namespace FleetLogV2.Data
                 DriverName = "Bengt Andersson",
                 CarReg = "ABC123",
                 EmployeeId = 1,
+                //FileName = "/images/drivers/driver1.jpg"
             });
             modelBuilder.Entity<Driver>().HasData(new Driver
             {
@@ -29,6 +30,7 @@ namespace FleetLogV2.Data
                 DriverName = "Sven Eriksson",
                 CarReg = "CDE234",
                 EmployeeId = 1,
+                //FileName = "/images/drivers/driver2.jpg",
             });
             modelBuilder.Entity<Driver>().HasData(new Driver
             {
@@ -36,6 +38,7 @@ namespace FleetLogV2.Data
                 DriverName = "Karin Larsson",
                 CarReg = "CAL234",
                 EmployeeId = 2,
+                //FileName = "/images/drivers/driver3.jpg",
             });
             modelBuilder.Entity<Driver>().HasData(new Driver
             {
@@ -43,6 +46,7 @@ namespace FleetLogV2.Data
                 DriverName = "Tove Jansson",
                 CarReg = "MUM234",
                 EmployeeId = 2,
+                //FileName = "/images/drivers/driver4.jpg",
             });
 
             modelBuilder.Entity<Employee>().HasData(new Employee
@@ -50,12 +54,14 @@ namespace FleetLogV2.Data
                 EmployeeId = 1,
                 EmployeeName = "Felicia Jahansson",
                 Email = "feli@mail.se",
+                //FileName = "/images/managers/manager1.jpg",
             });
             modelBuilder.Entity<Employee>().HasData(new Employee
             {
                 EmployeeId = 2,
                 EmployeeName = "Jack Black",
                 Email = "jack@mail.se",
+                //FileName = "/images/managers/manager2.jpg",
             });
 
             modelBuilder.Entity<Event>().HasData(new Event
