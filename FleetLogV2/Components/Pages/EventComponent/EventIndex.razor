@@ -2,6 +2,7 @@
 @inject ApplicationDbContext _app
 @attribute [Authorize(Roles = "Admin, Employee")]
 @rendermode InteractiveServer
+@using System.Globalization
 
 
 @if (Events is null)
@@ -11,7 +12,7 @@
 else
 {
        <div class="ms-4">
-        <h3 class="mt-4 ">Activities mellan <span class="text-shadow">@startDate.ToShortDateString()</span> and <span class="text-shadow">@endDate.ToShortDateString()</span></h3>
+        <h3 class="mt-4 ">Activities mellan <span class="text-shadow">@startDate.ToString("yyyy-MM-dd")</span> and <span class="text-shadow">@endDate.ToString("yyyy-MM-dd")</span></h3>
     </div>
     <div class="m-3 card shadow">
        
@@ -42,10 +43,15 @@ else
         </QuickGrid>
         <div class="offset-5 mt-3">
             <div class="d-flex">
-                <h5 class="text-black">Total:  </h5>
-                <div class="hstack gap-5 h5">
-                    <span class="text-shadow text-white ms-3">@GetSum().ToString("c") </span>
-                    <span class="text-shadow text-white text-end">@GetSumExpense().ToString("c")</span>
+                <h5 class="text-black  me-3">Total:  </h5>
+                <div class="hstack gap-6 h5">
+                    @{
+                        var sum = GetSum(); 
+                        var sumExpense = GetSumExpense();
+                        var swedishCulture = new CultureInfo("sv-SE"); 
+                    }
+                    <span class="text-shadow text-white ms-4" style="margin-right: 10px;">@sum.ToString("C", swedishCulture) </span>
+                    <span class="text-shadow text-white ms-3">@sumExpense.ToString("C", swedishCulture)</span>
                 </div>
             </div>
         </div>
@@ -165,4 +171,7 @@ else
     {
         return FilteredEvents.Sum(e => e.AmountOut);
     }
+   
+    
+
 }

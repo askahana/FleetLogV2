@@ -95,7 +95,6 @@ else
     }
     private async Task HandleRegisterDriver(Driver newDriver)
     {
-      
         await _app.Drivers.AddAsync(newDriver);
         await _app.SaveChangesAsync();
         DriverList = await _app.Drivers.Include(d => d.Employee).ToListAsync();

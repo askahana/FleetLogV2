@@ -1,14 +1,15 @@
 ﻿@page "/driverdetails/{Id:int}"
 @inject ApplicationDbContext _app
 @rendermode InteractiveServer
+@inject NavigationManager Navi
 
-@if(Driver is null)
+@if (Driver is null)
 {
     <p>No Driver info is available.</p>
 }
 else
 {
-     <div class="m-3 card shadow">
+    <div class="m-3 card shadow">
         <div class="row">
             <div class="col-8">
                 <table class="mx-5 py-5 my-3 w-100">
@@ -28,22 +29,6 @@ else
                         <th class="h2">Manager:</th>
                         <td class="h2">@(Driver.Employee?.EmployeeName ?? "None")</td>
                     </tr>
-                  @*   @if (Driver.Event != null && Driver.Event.Any())
-                    {
-                        <tr class=""><th class="h2">Between
-                                <span class="text-shadow">@startDate.ToShortDateString()</span> and
-                                <span class="text-shadow">@endDate.ToShortDateString()</span>
-                            </th>
-                        </tr>
-                    <tr>
-                        <th class="h2">Total income</th>
-                        <td class="h2">@GetSum().ToString("c")</td>
-                    </tr>
-                    <tr>
-                        <th class="h2">Total expense</th>
-                        <td class="h2">@GetSumExpense().ToString("c")</td>
-                    </tr>
-                    } *@
                 </table>
             </div>
             <div class="col-2 mt-3 ">
@@ -59,7 +44,7 @@ else
         </div>
         @if (Driver.Event != null && Driver.Event.Any())
         {
-            <QuickGrid Items=FilteredEvent Pagination="pagination">
+            <QuickGrid Items="FilteredEvent" Pagination="pagination">
                 <PropertyColumn Property="e => e.EventId" Sortable="true" Title="ID" Class="py-1 px-3 border-1"></PropertyColumn>
                 <PropertyColumn Property="e => e.EventType" Sortable="true" Title="Task/ Incident" Class="mx-3 py-1 px-3 border-1">
                     <ColumnOptions>
@@ -88,24 +73,23 @@ else
             <h1 class="mx-5 my-3 text-shadow">No events found for this driver.</h1>
         }
     </div>
-    <GoBack/>
-
-
-<JobModal @ref="jobModal" Event="Event" HandleAddEvent="HandleAddEvent"
-            HandleConfirmDeleteEvent="HandleConfirmDeleteEvent"
-         HandleEditEvent ="HandleEditEvent"> 
-</JobModal>
-<style>
-    tbody tr:hover {
-        background-color: rgba(0, 123, 255, 0.3);
-    }
-</style>
+    <GoBack />
+    <JobModal @ref="jobModal" Event="Event" HandleAddEvent="HandleAddEvent"
+              HandleConfirmDeleteEvent="HandleConfirmDeleteEvent"
+              HandleEditEvent="HandleEditEvent">
+    </JobModal>
+    <style>
+        tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.3);
+        }
+    </style>
 }
 
-
 @code {
+
     private Driver Driver = new Driver();
     JobModal jobModal;
+
     [Parameter]
     public int Id { get; set; }
     [Parameter]
@@ -114,7 +98,7 @@ else
     private string? eventFilter;
     private DateTime startDate = DateTime.Now.AddDays(-50);
     private DateTime endDate = DateTime.Now;
-    IQueryable<Event> FilteredEvent
+    public IQueryable<Event> FilteredEvent
     {
         get
         {
@@ -125,22 +109,23 @@ else
             }
             result = result
             .Where(e => e.TimeStamp >= startDate && e.TimeStamp <= endDate);
-
             return result;
         }
     }
 
+
     private PaginationState pagination = new PaginationState() { ItemsPerPage = 10 };
     protected override async Task OnInitializedAsync()
     {
-        Driver = await _app.Drivers.Include(d => d.Event).Include(d=> d.Employee).FirstOrDefaultAsync(d => d.DriverId == Id);
+        Driver = await _app.Drivers.Include(d => d.Event).Include(d => d.Employee).FirstOrDefaultAsync(d => d.DriverId == Id);
+
     }
 
     // Add
     private async Task ShowModal()
     {
-        Event = new Event();
         jobModal.ChangeTitle("Add new");
+        Event = new Event();
         jobModal.LoadDefault();
         await jobModal.OpenModal();
     }
@@ -148,11 +133,15 @@ else
     private async Task HandleAddEvent(Event incomingEvent)
     {
         incomingEvent.DriverId = Driver.DriverId;
-        var newEvent = _app.Events.Add(incomingEvent);
+        await _app.Events.AddAsync(incomingEvent);
         await _app.SaveChangesAsync();
-        Driver = await _app.Drivers.Include(d => d.Event).Include(d => d.Employee).FirstOrDefaultAsync(d => d.DriverId == Id);
-        // StateHasChanged();
+        // Driver.Event.Add(incomingEvent);
+        // Driver = await _app.Drivers.Include(d => d.Event).Include(d => d.Employee)
+        //         .FirstOrDefaultAsync(d => d.DriverId == Driver.DriverId);
+        // Console.WriteLine($"Updated Driver: {Driver.DriverName}, Events Count: {Driver.Event.Count()}");
         await jobModal.HideModal();
+        Navi.Refresh(true);
+
     }
 
     //Edit
@@ -166,10 +155,10 @@ else
     private async Task HandleEditEvent(Event incomingEvent)
     {
         // Edit
-        if(incomingEvent.EventId > 0)
-        {
-            var eventEdit = _app.Events.FirstOrDefault(d => d.EventId == incomingEvent.EventId);
-            if(eventEdit is null) return;
+        // if (incomingEvent.EventId > 0)
+        // {
+            var eventEdit = await _app.Events.FirstOrDefaultAsync(d => d.EventId == incomingEvent.EventId);
+            if (eventEdit is null) return;
             eventEdit.EventType = incomingEvent.EventType;
             eventEdit.TimeStamp = incomingEvent.TimeStamp;
             eventEdit.AmountIn = incomingEvent.AmountIn;
@@ -177,7 +166,7 @@ else
             await _app.SaveChangesAsync();
             await jobModal.HideModal();
             return;
-        }
+        // }
     }
 
     //Delete

@@ -73,12 +73,20 @@
         var modal = bootstrap.Modal.getInstance(modalElement);
         if (modal) {
             modal.hide();
+            // modalElement.addEventListener('hidden.bs.modal', function () {
+            //     document.body.classList.remove('modal-open');
+            //     document.querySelector('.modal-backdrop').remove();
+            // }, { once: true });
             modalElement.addEventListener('hidden.bs.modal', function () {
                 document.body.classList.remove('modal-open');
-                document.querySelector('.modal-backdrop').remove();
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
             }, { once: true });
         }
     }
+   
 </script>
 
 @code {
@@ -107,6 +115,7 @@
         if(Title == "Add new")
         {
             await HandleAddEvent.InvokeAsync(Event);
+            
         }
         if(Title == "Edit")
         {
